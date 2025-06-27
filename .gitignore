@@ -1,0 +1,11 @@
+# Virtual Environment files
+venv/
+env/
+
+__pycache__/
+.ropeproject/
+
+
+# Environment variables
+.env
+.env.*
