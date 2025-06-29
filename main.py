@@ -3,13 +3,17 @@ import sys
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from prompts import system_prompt
+from call_function import available_functions
+
 
 def main():
     load_dotenv()
 
-    input_text = sys.argv[1:]
+    verbose = "--verbose" in sys.argv
+    args = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
 
-    if not input_text:
+    if not args:
         print("AI Code Assistant")
         print('Usage: python main.py "your prompt here"\n')
         print('For detailed information add a --verbose flag.\n')
@@ -18,33 +22,43 @@ def main():
     api_key = os.environ.get("GEMINI_API_KEY")
     client = genai.Client(api_key=api_key)
 
-    user_prompt = sys.argv[1]
+    user_prompt = " ".join(args)
+
+    if verbose:
+        print(f"User prompt: {user_prompt}\n")
 
     messages = [
         types.Content(role="user", parts=[types.Part(text=user_prompt)]),
     ]
 
-    print("Response:")
-    print(generate_content(client, messages).text)
-
-    if len(sys.argv) > 2 and sys.argv[2] == "--verbose":
-        print(f"User prompt: {user_prompt}\n")
-        generate_details(generate_content(client, messages))
+    generate_content(client, messages, verbose)
 
 
-def generate_content(client, messages):
+def generate_content(client, messages, verbose):
+    model_name = "gemini-2.0-flash-001"
+    
     response = client.models.generate_content(
-        model="gemini-2.0-flash-001",
+        model=model_name,
         contents=messages,
+        config=types.GenerateContentConfig(
+            tools=[available_functions], system_instruction=system_prompt
+        )
     )
+
+    if verbose:
+        print("Prompt tokens:", response.usage_metadata.prompt_token_count)
+        print("Response tokens:", response.usage_metadata.candidates_token_count)
+
+    # Check if there are function calls in the response
+    if response.function_calls:
+        # The LLM wants to call a function
+        for function_call_part in response.function_calls:
+            print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    else:
+        # No function calls, just regular text response
+        print(response.text)
+    
     return response
-
-def generate_details(response):
-    prompt_tokens = response.usage_metadata.prompt_token_count
-    completion_tokens = response.usage_metadata.candidates_token_count
-
-    print(f"Prompt tokens: {prompt_tokens}")
-    print(f"Response tokens: {completion_tokens}")
 
 
 if __name__ == "__main__":
