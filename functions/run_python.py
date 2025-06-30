@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 
-def run_python_file(working_directory, file_path):
+def run_python_file(working_directory, file_path, args=None):
     abs_working_dir = Path(working_directory).resolve()
     abs_file_path = Path(abs_working_dir.joinpath(file_path)).resolve()
 
@@ -20,6 +20,9 @@ def run_python_file(working_directory, file_path):
         return f'Error: "{file_path}" is not a Python file.'
     
     try:
+        commands = ["python", abs_file_path]
+        if args:
+            commands.extend(args)
         result = subprocess.run(
             [sys.executable, abs_file_path],
             capture_output=True,
@@ -61,6 +64,7 @@ schema_run_python_file = types.FunctionDeclaration(
                     description="Optional arguments to pass to the Python file.",
                 ),
                 description="Optional arguments to pass to the Python file.",
+                default=[]
             ),
         },
         required=["file_path"],

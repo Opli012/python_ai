@@ -4,8 +4,9 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-from prompts import system_prompt
 from call_function import call_function, available_functions
+
+from prompts import system_prompt
 from config import MAX_ITERATIONS
 
 
